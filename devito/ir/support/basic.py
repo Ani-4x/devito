@@ -392,8 +392,6 @@ class TimedAccess(IterationInstance, AccessMode):
                 # objects falls back to zero, as any other value would be
                 # nonsensical
                 ret.append(S.Zero)
-            # FIXME: This should have returned True
-            # elif degenerating_indices(sai, oai):
             elif degenerating_indices(self[n], other[n], self.function):
                 # Special case: `sai` and `oai` may be different symbolic objects
                 # but they can be proved to systematically generate the same value
