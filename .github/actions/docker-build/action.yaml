@@ -14,6 +14,10 @@ inputs:
   base:
     description: "Base docker image to build on top of"
     default: ""
+  args:
+    description: "Arguments to pass to `docker build`"
+    required: true
+    default: ""
 
 outputs:
   unique:
@@ -42,4 +46,5 @@ runs:
           --file ${{ inputs.file }} \
           --tag ${{ inputs.tag }}_${{ steps.uniquetag.outputs.unique }} \
           ${BASE:+--build-arg base=$BASE} \
+          ${{ inputs.args }} \
           .
