@@ -56,7 +56,7 @@ jobs:
           runner_label: amdgpu
           base: "devitocodes/bases:amd"
           test_drive_cmd: "rocm-smi"
-          # Unchanged, still passes through required /dev nodes etc.
+          # Passes through required /dev nodes etc.
           dockerflags: >-
             --network=host
             --device=/dev/kfd --device=/dev/dri

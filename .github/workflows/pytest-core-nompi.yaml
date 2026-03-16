@@ -8,8 +8,7 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  # Trigger the workflow on push or pull request,
-  # but only for the main branch
+  # Trigger the workflow on push or pull request, but only for the main branch
   push:
     branches:
       - main
@@ -28,7 +27,7 @@ jobs:
       OMP_NUM_THREADS: 2
 
     strategy:
-      # Prevent all build to stop if a single one fails
+      # Prevent cancellation if a single workflow fails
       fail-fast: false
 
       matrix:
@@ -185,7 +184,7 @@ jobs:
       OMP_NUM_THREADS: 2
 
     strategy:
-      # Prevent all build to stop if a single one fails
+      # Prevent cancellation if a single workflow fails
       fail-fast: false
 
       matrix:

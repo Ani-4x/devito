@@ -7,19 +7,19 @@ inputs:
   uid:
     description: "Unique identifier output from docker-build action"
     required: true
+  tag:
+    description: "Tag of the built image to use"
+    required: true
+  name:
+    description: "Name substring for docker to use when running the command"
+    default: ""
   args:
-    description: "Arguments to pass to `docker run`"
+    description: "Arguments to pass to `docker run`, `--init -t --rm` are always added"
     required: true
     default: ""
   env:
     description: "Environment variables to set inside the docker container, one environment variable per line"
     required: true
-    default: ""
-  tag:
-    description: "Tag of the built image to use"
-    required: true
-  name:
-    description: "Name for docker to use when running the command"
     default: ""
   command:
     description: "Command to execute inside of the docker container"
