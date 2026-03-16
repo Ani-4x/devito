@@ -192,3 +192,7 @@ def test_buffer1_fissioning():
     # x and y
     assert 'x0_blk0_size' in str(op.parameters)
     assert 'y0_blk0_size' in str(op.parameters)
+
+    # Two loop nests: free-surface-like and update-like
+    assert_structure(op, ['t,x,y,z', 't,x0_blk0,y0_blk0,x,y,z'],
+                     't,x,y,z,x0_blk0,y0_blk0,x,y,z')
