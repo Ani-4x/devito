@@ -13,8 +13,7 @@ inputs:
     required: true
   base:
     description: "Base docker image to build on top of"
-    required: true
-    default: "devitocodes/bases:cpu-gcc"
+    default: ""
 
 outputs:
   unique:
@@ -35,20 +34,12 @@ runs:
     - id: dockerbuild
       name: "Build docker container"
       shell: bash
+      env:
+        BASE: ${{ inputs.base }}
       run: |
         docker build \
           --pull \
           --file ${{ inputs.file }} \
           --tag ${{ inputs.tag }}_${{ steps.uniquetag.outputs.unique }} \
-          --build-arg base=${{ inputs.base }} \
+          ${BASE:+--build-arg base=$BASE} \
           .
-
-# Do we need to be more specific?
-#~ docker buildx build . \
-  #~ --builder "${RUNNER_NAME// /_}" \
-  #~ --load \
-  #~ --label ci-run="$GITHUB_RUN_ID" \
-  #~ --rm --pull \
-  #~ --file docker/Dockerfile.devito \
-  #~ --tag "${DOCKER_IMAGE}" \
-  #~ --build-arg base="${{ matrix.base }}"
