@@ -570,10 +570,6 @@ class Relation:
         return self.source.distance(self.sink)
 
     @cached_property
-    def distance_logical(self):
-        return self.source.distance(self.sink, logical=True)
-
-    @cached_property
     def _defined_findices(self):
         return frozenset(flatten(i._defines for i in self.findices))
 
@@ -655,19 +651,6 @@ class Dependence(Relation, CacheInstances):
     def cause(self):
         """Return the findex causing the dependence."""
         for i, j in zip(self.findices, self.distance, strict=False):
-            try:
-                if j > 0:
-                    return i._defines
-            except TypeError:
-                # Conservatively assume this is an offending dimension
-                return i._defines
-        return frozenset()
-
-    # TODO: Refactor this
-    @cached_property
-    def cause_logical(self):
-        """Return the findex causing the dependence."""
-        for i, j in zip(self.findices, self.distance_logical, strict=False):
             try:
                 if j > 0:
                     return i._defines
@@ -806,15 +789,18 @@ class Dependence(Relation, CacheInstances):
         return False
 
 
+class LogicalDependence(Dependence):
+
+    @cached_property
+    def distance(self):
+        return self.source.distance(self.sink, logical=True)
+
+
 class DependenceGroup(set):
 
     @cached_property
     def cause(self):
         return frozenset().union(*[i.cause for i in self])
-
-    @cached_property
-    def cause_logical(self):
-        return frozenset().union(*[i.cause_logical for i in self])
 
     @cached_property
     def functions(self):
@@ -1135,7 +1121,7 @@ class Scope(CacheInstances):
         return DependenceGroup(self.d_flow_gen())
 
     @memoized_generator
-    def d_anti_gen(self, logical=False):
+    def d_anti_gen(self, depcls=Dependence):
         """Generate the anti (or "write-after-read") dependences."""
         for k, v in self.writes.items():
             for w in v:
@@ -1143,13 +1129,12 @@ class Scope(CacheInstances):
                     if any(not rule(r, w) for rule in self.rules):
                         continue
 
-                    dependence = Dependence(r, w)
+                    dependence = depcls(r, w)
 
                     if dependence.is_imaginary:
                         continue
 
-                    distance = dependence.distance_logical \
-                        if logical else dependence.distance
+                    distance = dependence.distance
 
                     try:
                         is_anti = distance > 0 or (r.lex_lt(w) and distance == 0)
@@ -1172,7 +1157,7 @@ class Scope(CacheInstances):
         Anti (or "write-after-read") dependences using logical rather than true
         distances.
         """
-        return DependenceGroup(self.d_anti_gen(logical=True))
+        return DependenceGroup(self.d_anti_gen(depcls=LogicalDependence))
 
     @memoized_generator
     def d_output_gen(self):

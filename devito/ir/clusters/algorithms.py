@@ -176,7 +176,7 @@ class Schedule(Queue):
         # user-specified backward iteration before defaulting to forward to avoid a
         # gotcha by using the logical d_anti here.
         idir = {d: Backward for d in candidates
-                if d.root in scope.d_anti_logical.cause_logical}
+                if d.root in scope.d_anti_logical.cause}
         if maybe_break:
             idir.update({d: Forward for d in candidates if d.root in scope.d_flow.cause})
         # Default to forward for remaining dimensions
