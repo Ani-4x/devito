@@ -320,7 +320,7 @@ class TimedAccess(IterationInstance, AccessMode):
     def lex_lt(self, other):
         return self.timestamp < other.timestamp
 
-    def distance(self, other):
+    def distance(self, other, logical=False):
         """
         Compute the distance from ``self`` to ``other``.
 
@@ -328,6 +328,9 @@ class TimedAccess(IterationInstance, AccessMode):
         ----------
         other : TimedAccess
             The TimedAccess w.r.t. which the distance is computed.
+        logical : bool
+            Compute a logical distance rather than true distance (i.e. ignoring
+            degenerating indices created by size 1 buffers etc).
         """
         if isinstance(self.access, ComponentAccess) and \
            isinstance(other.access, ComponentAccess) and \
@@ -392,7 +395,7 @@ class TimedAccess(IterationInstance, AccessMode):
                 # objects falls back to zero, as any other value would be
                 # nonsensical
                 ret.append(S.Zero)
-            elif degenerating_indices(self[n], other[n], self.function):
+            elif degenerating_indices(self[n], other[n], self.function, logical=logical):
                 # Special case: `sai` and `oai` may be different symbolic objects
                 # but they can be proved to systematically generate the same value
                 ret.append(S.Zero)
@@ -567,6 +570,10 @@ class Relation:
         return self.source.distance(self.sink)
 
     @cached_property
+    def distance_logical(self):
+        return self.source.distance(self.sink, logical=True)
+
+    @cached_property
     def _defined_findices(self):
         return frozenset(flatten(i._defines for i in self.findices))
 
@@ -648,6 +655,19 @@ class Dependence(Relation, CacheInstances):
     def cause(self):
         """Return the findex causing the dependence."""
         for i, j in zip(self.findices, self.distance, strict=False):
+            try:
+                if j > 0:
+                    return i._defines
+            except TypeError:
+                # Conservatively assume this is an offending dimension
+                return i._defines
+        return frozenset()
+
+    # TODO: Refactor this
+    @cached_property
+    def cause_logical(self):
+        """Return the findex causing the dependence."""
+        for i, j in zip(self.findices, self.distance_logical, strict=False):
             try:
                 if j > 0:
                     return i._defines
@@ -791,6 +811,10 @@ class DependenceGroup(set):
     @cached_property
     def cause(self):
         return frozenset().union(*[i.cause for i in self])
+
+    @cached_property
+    def cause_logical(self):
+        return frozenset().union(*[i.cause_logical for i in self])
 
     @cached_property
     def functions(self):
@@ -1111,7 +1135,7 @@ class Scope(CacheInstances):
         return DependenceGroup(self.d_flow_gen())
 
     @memoized_generator
-    def d_anti_gen(self):
+    def d_anti_gen(self, logical=False):
         """Generate the anti (or "write-after-read") dependences."""
         for k, v in self.writes.items():
             for w in v:
@@ -1124,7 +1148,9 @@ class Scope(CacheInstances):
                     if dependence.is_imaginary:
                         continue
 
-                    distance = dependence.distance
+                    distance = dependence.distance_logical \
+                        if logical else dependence.distance
+
                     try:
                         is_anti = distance > 0 or (r.lex_lt(w) and distance == 0)
                     except TypeError:
@@ -1139,6 +1165,14 @@ class Scope(CacheInstances):
     def d_anti(self):
         """Anti (or "write-after-read") dependences."""
         return DependenceGroup(self.d_anti_gen())
+
+    @cached_property
+    def d_anti_logical(self):
+        """
+        Anti (or "write-after-read") dependences using logical rather than true
+        distances.
+        """
+        return DependenceGroup(self.d_anti_gen(logical=True))
 
     @memoized_generator
     def d_output_gen(self):
@@ -1425,7 +1459,7 @@ def disjoint_test(e0, e1, d, it):
     return not bool(i0.intersect(i1))
 
 
-def degenerating_indices(i0, i1, function):
+def degenerating_indices(i0, i1, function, logical=False):
     """
     True if `i0` and `i1` are indices that are possibly symbolically
     different, but they can be proved to systematically degenerate to the
@@ -1440,17 +1474,19 @@ def degenerating_indices(i0, i1, function):
 
     # Case 2: SteppingDimension corresponding to buffer of size 1
     # Extract dimension from both IndexAccessFunctions -> d0, d1
-    try:
-        d0 = i0.d
-    except AttributeError:
-        d0 = i0
-    try:
-        d1 = i1.d
-    except AttributeError:
-        d1 = i1
+    # Skipped if doing a purely logical check
+    if not logical:
+        try:
+            d0 = i0.d
+        except AttributeError:
+            d0 = i0
+        try:
+            d1 = i1.d
+        except AttributeError:
+            d1 = i1
 
-    with suppress(AttributeError):
-        if d0 is d1 and d0.is_Stepping and function._size_domain[d0] == 1:
-            return True
+        with suppress(AttributeError):
+            if d0 is d1 and d0.is_Stepping and function._size_domain[d0] == 1:
+                return True
 
     return False

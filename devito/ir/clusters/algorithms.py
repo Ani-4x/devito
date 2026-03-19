@@ -170,9 +170,16 @@ class Schedule(Queue):
                                      candidates | known_break)
 
         # Compute iteration direction
-        idir = {d: Backward for d in candidates if d.root in scope.d_anti.cause}
+        # When checking for iteration direction, the user may have specified an LHS
+        # preceding the RHS, implying backward iteration, even if there is no strict
+        # reason that this iteration would need to run backward. Check if there is a
+        # user-specified backward iteration before defaulting to forward to avoid a
+        # gotcha by using the logical d_anti here.
+        idir = {d: Backward for d in candidates
+                if d.root in scope.d_anti_logical.cause_logical}
         if maybe_break:
             idir.update({d: Forward for d in candidates if d.root in scope.d_flow.cause})
+        # Default to forward for remaining dimensions
         idir.update({d: Forward for d in candidates if d not in idir})
 
         # Enforce iteration direction on each Cluster

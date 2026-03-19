@@ -17,6 +17,7 @@ from devito.data import LEFT, RIGHT
 from devito.ir.iet import (
     Call, Conditional, FindNodes, FindSymbols, Iteration, retrieve_iteration_tree
 )
+from devito.ir.support.space import Backward, Forward
 from devito.mpi import MPI
 from devito.mpi.distributed import CustomTopology
 from devito.mpi.routines import ComputeCall, HaloUpdateCall, HaloUpdateList, MPICall
@@ -1916,8 +1917,8 @@ class TestCodeGeneration:
         (2, True, 'Eq(v3.forward, v2.forward.laplace + 1)', 3, 2, ('v1', 'v2')),
         (1, False, 'rec.interpolate(v2)', 3, 2, ('v1', 'v2')),
         (1, False, 'Eq(v3.backward, v2.laplace + 1)', 3, 2, ('v1', 'v2')),
-        (1, False, 'Eq(v3.backward, v2.backward.laplace + 1)', 3, 3, ('v2', 'v1', 'v2')),
-        (2, False, 'Eq(v3.backward, v2.backward.laplace + 1)', 3, 3, ('v2', 'v1', 'v2')),
+        (1, False, 'Eq(v3.backward, v2.backward.laplace + 1)', 3, 2, ('v1', 'v2')),
+        (2, False, 'Eq(v3.backward, v2.backward.laplace + 1)', 3, 2, ('v1', 'v2')),
     ])
     def test_haloupdate_buffer_cases(self, sz, fwd, expr, exp0, exp1, args, mode):
         grid = Grid((65, 65, 65), topology=('*', 1, '*'))
@@ -1942,6 +1943,12 @@ class TestCodeGeneration:
 
         op = Operator(eqns)
         _ = op.cfunction
+
+        # Check for time loop direction
+        trees = retrieve_iteration_tree(op)
+        direction = Forward if fwd else Backward
+        for tree in trees:
+            assert tree[0].direction == direction
 
         calls, _ = check_halo_exchanges(op, exp0, exp1)
         for i, v in enumerate(args):
