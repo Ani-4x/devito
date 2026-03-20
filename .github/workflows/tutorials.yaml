@@ -72,9 +72,7 @@ jobs:
         pytest \
           -v \
           --nbval \
-          -k 'not dask' \
-          -k 'not synthetics' \
-          -k 'not mpi' \
+          -k 'not dask and not synthetics and not mpi' \
           examples
 
     - name: Failing notebooks
@@ -135,9 +133,7 @@ jobs:
           pytest \
             -v \
             --nbval \
-            -k 'not dask' \
-            -k 'not synthetics' \
-            -k 'not mpi' \
+            -k 'not dask and not synthetics and not mpi' \
             examples
 
     - name: Failing notebooks
