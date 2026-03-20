@@ -178,7 +178,7 @@ jobs:
         run: |
          docker run ${{ matrix.flag }} --rm -t --name "${CONTAINER_NAME}" \
            devitocodes/devito:${{ matrix.tag }}-dev \
-           pytest ${{ matrix.test }}
+           pytest -v ${{ matrix.test }}
 
   deploy-devito-manifest:
     needs: deploy-devito
@@ -292,4 +292,4 @@ jobs:
         run: |
          docker run ${{ matrix.flag }} --rm -t --name "${CONTAINER_NAME}" \
            devitocodes/devito:${{ matrix.tag }}-dev \
-           pytest ${{ matrix.test }}
+           pytest -v ${{ matrix.test }}
