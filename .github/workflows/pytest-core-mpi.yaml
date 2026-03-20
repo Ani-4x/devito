@@ -47,13 +47,22 @@ jobs:
     - name: Test with pytest
       run: |
         python3 scripts/clear_devito_cache.py
-        python3 -m pytest --cov --cov-config=.coveragerc --cov-report=xml -m parallel tests/
+        python3 -m pytest \
+          -v \
+          --cov \
+          --cov-config=.coveragerc \
+          --cov-report=xml \
+          -m parallel \
+          tests/
 
     - name: Test examples with MPI
       run: |
         python3 scripts/clear_devito_cache.py
-        DEVITO_MPI=1 mpirun -n 2 python3 -m pytest examples/seismic/acoustic
-        DEVITO_MPI=1 mpirun -n 2 python3 -m pytest examples/seismic/tti
+        DEVITO_MPI=1 mpirun -n 2 \
+          python3 -m pytest \
+            -v \
+            examples/seismic/acoustic \
+            examples/seismic/tti
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v5
@@ -104,9 +113,15 @@ jobs:
         env: |
           CODECOV_TOKEN=${{ secrets.CODECOV_TOKEN }}
           OMP_NUM_THREADS=1
-        command: "pytest tests/test_mpi.py"
+        command: |
+          pytest \
+            -v \
+            --cov \
+            --cov-config=.coveragerc \
+            --cov-report=xml \
+            tests/test_mpi.py
 
-    - name: Test acoustic example with MPI
+    - name: Test acoustic and TTI examples with MPI
       uses: ./.github/actions/docker-run
       with:
         uid: ${{ steps.build.outputs.unique }}
@@ -114,17 +129,12 @@ jobs:
         env: |
           DEVITO_MPI=1
           OMP_NUM_THREADS=1
-        command: "mpiexec -n 2 pytest examples/seismic/acoustic"
-
-    - name: Test tti example with MPI
-      uses: ./.github/actions/docker-run
-      with:
-        uid: ${{ steps.build.outputs.unique }}
-        tag: ${{ matrix.name }}
-        env: |
-          DEVITO_MPI=1
-          OMP_NUM_THREADS=1
-        command: "mpiexec -n 2 pytest examples/seismic/tti"
+        command: |
+          mpiexec -n 2 \
+            pytest \
+              -v \
+              examples/seismic/acoustic \
+              examples/seismic/tti
 
     - name: Cleanup docker image
       if: always()

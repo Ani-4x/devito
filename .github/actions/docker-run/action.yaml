@@ -43,7 +43,7 @@ runs:
         done <<< "$ENV_INPUT"
         # Remove the leading space from the first concatenation
         ENV_STRING="${ENV_STRING# }"
-        echo "env=$ENV_STRING" >> "$GITHUB_OUTPUT"
+        echo "docker_environment_args=$ENV_STRING" >> "$GITHUB_OUTPUT"
 
     - id: dockerrun
       name: "Run command ${{ inputs.command }} in ${{ inputs.tag }} docker container"
@@ -56,6 +56,6 @@ runs:
           ${{ inputs.args }} \
           --name "ci-${NAME:-${{ inputs.tag }}}-${{ inputs.uid }}" \
           --env-file=docker/coverage.env \
-          ${{ steps.processenv.outputs.env }} \
+          ${{ steps.processenv.outputs.docker_environment_args }} \
           "${{ inputs.tag }}_${{ inputs.uid }}" \
           ${{ inputs.command }}

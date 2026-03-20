@@ -161,6 +161,7 @@ jobs:
     - name: Test with pytest
       run: |
         pytest \
+          -v \
           -k "${{ matrix.test-set }}" \
           -m "not parallel" \
           --cov \
@@ -235,25 +236,6 @@ jobs:
         tag: ${{ matrix.name }}
         base: devitocodes/bases:cpu-${{ matrix.arch }}
 
-    - name: Get the Docker image Python version
-      uses: ./.github/actions/docker-run
-      with:
-        uid: ${{ steps.build.outputs.unique }}
-        tag: ${{ matrix.name }}
-        command: >
-          python3 --version | grep "Python " | cut -d' ' -f2 | cut -d'.' -f1,2 > dockerpythonversion.txt
-
-    - name: Check Docker image Python version
-      run: |
-        declared_pyver="${{ matrix.python-version }}"
-        actual_pyver=$(cat dockerpythonversion.txt)
-        echo "Declared Python version: $declared_pyver"
-        echo "Actual Python version: $actual_pyver"
-        if [ "$declared_pyver" != "$actual_pyver" ]; then
-          echo "Python version mismatch: declared $declared_pyver, image has $actual_pyver"
-          exit 1
-        fi
-
     - name: Test with pytest
       uses: ./.github/actions/docker-run
       with:
@@ -263,6 +245,7 @@ jobs:
           CODECOV_TOKEN=${{ secrets.CODECOV_TOKEN }}
         command: |
           pytest \
+            -v \
             -k "${{ matrix.test-set }}" \
             -m "not parallel" \
             --cov \

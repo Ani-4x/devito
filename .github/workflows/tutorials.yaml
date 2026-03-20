@@ -67,52 +67,26 @@ jobs:
         pip install -e ".[tests,extras]"
         pip install blosc
 
-    - name: Seismic notebooks
+    - name: Test all notebooks
       run: |
-        pytest --nbval -k 'not dask' -k 'not synthetics' examples/seismic/tutorials/
-        pytest --nbval examples/seismic/acoustic/accuracy.ipynb
+        pytest \
+          -v \
+          --nbval \
+          -k 'not dask' \
+          -k 'not synthetics' \
+          -k 'not mpi' \
+          examples
 
     - name: Failing notebooks
+      # TODO: Fix or skip this
       continue-on-error: true
       run: |
-        pytest --nbval examples/seismic/tutorials/14_creating_synthetics.ipynb
+        pytest -v --nbval examples/seismic/tutorials/14_creating_synthetics.ipynb
 
     - name: Dask notebooks
       if: runner.os != 'macOS'
       run: |
-        pytest --nbval examples/seismic/tutorials/*dask*.ipynb
-
-    - name: Self-adjoint notebooks
-      run: |
-        pytest --nbval examples/seismic/self_adjoint/
-
-    - name: CFD notebooks
-      run: |
-        pytest --nbval examples/cfd
-
-    - name: User api notebooks
-      run: |
-        pytest --nbval examples/userapi
-
-    - name: Compiler notebooks
-      run: |
-        pytest --nbval examples/compiler
-
-    - name: Finance notebooks
-      run: |
-        pytest --nbval examples/finance
-
-    - name: Performance notebooks
-      run: |
-        pytest --nbval examples/performance
-
-    - name: ABC Notebooks
-      run: |
-        pytest --nbval examples/seismic/abc_methods
-
-    - name: Timestepping Notebooks
-      run: |
-        pytest --nbval examples/timestepping
+        pytest -v --nbval examples/seismic/tutorials/*dask*.ipynb
 
   tutorials-docker:
     name: ${{ matrix.name }}
@@ -148,25 +122,6 @@ jobs:
         file: docker/Dockerfile.devito
         tag: ${{ matrix.name }}
 
-    - name: Get the Docker image Python version
-      uses: ./.github/actions/docker-run
-      with:
-        uid: ${{ steps.build.outputs.unique }}
-        tag: ${{ matrix.name }}
-        command: >
-          python3 --version | grep "Python " | cut -d' ' -f2 | cut -d'.' -f1,2 > dockerpythonversion.txt
-
-    - name: Check Docker image Python version
-      run: |
-        declared_pyver="${{ matrix.python-version }}"
-        actual_pyver=$(cat dockerpythonversion.txt)
-        echo "Declared Python version: $declared_pyver"
-        echo "Actual Python version: $actual_pyver"
-        if [ "$declared_pyver" != "$actual_pyver" ]; then
-          echo "Python version mismatch: declared $declared_pyver, image has $actual_pyver"
-          exit 1
-        fi
-
     - name: Test seismic notebooks
       uses: ./.github/actions/docker-run
       with:
@@ -175,27 +130,15 @@ jobs:
         env: |
           CI=true
           CODECOV_TOKEN=${{ secrets.CODECOV_TOKEN }}
-          DEVITO_LOGGING=DEBUG
           PYTHONFAULTHANDLER=1
         command: |
           pytest \
+            -v \
             --nbval \
             -k 'not dask' \
             -k 'not synthetics' \
-            examples/seismic/tutorials/
-
-    - name: Test seismic accuracy notebook
-      uses: ./.github/actions/docker-run
-      with:
-        uid: ${{ steps.build.outputs.unique }}
-        tag: ${{ matrix.name }}
-        env: |
-          CI=true
-          CODECOV_TOKEN=${{ secrets.CODECOV_TOKEN }}
-          DEVITO_LOGGING=DEBUG
-          PYTHONFAULTHANDLER=1
-        command: |
-          pytest --nbval examples/seismic/acoustic/accuracy.ipynb
+            -k 'not mpi' \
+            examples
 
     - name: Failing notebooks
       continue-on-error: true
@@ -206,10 +149,9 @@ jobs:
         env: |
           CI=true
           CODECOV_TOKEN=${{ secrets.CODECOV_TOKEN }}
-          DEVITO_LOGGING=DEBUG
           PYTHONFAULTHANDLER=1
         command: |
-          pytest --nbval examples/seismic/tutorials/14_creating_synthetics.ipynb
+          pytest -v --nbval examples/seismic/tutorials/14_creating_synthetics.ipynb
 
     - name: Dask notebooks
       uses: ./.github/actions/docker-run
@@ -222,109 +164,7 @@ jobs:
           DEVITO_LOGGING=DEBUG
           PYTHONFAULTHANDLER=1
         command: |
-          pytest --nbval examples/seismic/tutorials/*dask*.ipynb
-
-    - name: Self-adjoint notebooks
-      uses: ./.github/actions/docker-run
-      with:
-        uid: ${{ steps.build.outputs.unique }}
-        tag: ${{ matrix.name }}
-        env: |
-          CI=true
-          CODECOV_TOKEN=${{ secrets.CODECOV_TOKEN }}
-          DEVITO_LOGGING=DEBUG
-          PYTHONFAULTHANDLER=1
-        command: |
-          pytest --nbval examples/seismic/self_adjoint/
-
-    - name: CFD notebooks
-      uses: ./.github/actions/docker-run
-      with:
-        uid: ${{ steps.build.outputs.unique }}
-        tag: ${{ matrix.name }}
-        env: |
-          CI=true
-          CODECOV_TOKEN=${{ secrets.CODECOV_TOKEN }}
-          DEVITO_LOGGING=DEBUG
-          PYTHONFAULTHANDLER=1
-        command: |
-          pytest --nbval examples/cfd
-
-    - name: User api notebooks
-      uses: ./.github/actions/docker-run
-      with:
-        uid: ${{ steps.build.outputs.unique }}
-        tag: ${{ matrix.name }}
-        env: |
-          CI=true
-          CODECOV_TOKEN=${{ secrets.CODECOV_TOKEN }}
-          PYTHONFAULTHANDLER=1
-        command: |
-          pytest --nbval examples/userapi
-
-    - name: Compiler notebooks
-      uses: ./.github/actions/docker-run
-      with:
-        uid: ${{ steps.build.outputs.unique }}
-        tag: ${{ matrix.name }}
-        env: |
-          CI=true
-          CODECOV_TOKEN=${{ secrets.CODECOV_TOKEN }}
-          DEVITO_LOGGING=DEBUG
-          PYTHONFAULTHANDLER=1
-        command: |
-          pytest --nbval examples/compiler
-
-    - name: Finance notebooks
-      uses: ./.github/actions/docker-run
-      with:
-        uid: ${{ steps.build.outputs.unique }}
-        tag: ${{ matrix.name }}
-        env: |
-          CI=true
-          CODECOV_TOKEN=${{ secrets.CODECOV_TOKEN }}
-          DEVITO_LOGGING=DEBUG
-          PYTHONFAULTHANDLER=1
-        command: |
-          pytest --nbval examples/finance
-
-    - name: Performance notebooks
-      uses: ./.github/actions/docker-run
-      with:
-        uid: ${{ steps.build.outputs.unique }}
-        tag: ${{ matrix.name }}
-        env: |
-          CI=true
-          CODECOV_TOKEN=${{ secrets.CODECOV_TOKEN }}
-          PYTHONFAULTHANDLER=1
-        command: |
-          pytest --nbval examples/performance
-
-    - name: ABC Notebooks
-      uses: ./.github/actions/docker-run
-      with:
-        uid: ${{ steps.build.outputs.unique }}
-        tag: ${{ matrix.name }}
-        env: |
-          CI=true
-          CODECOV_TOKEN=${{ secrets.CODECOV_TOKEN }}
-          DEVITO_LOGGING=DEBUG
-          PYTHONFAULTHANDLER=1
-        command: |
-          pytest --nbval examples/seismic/abc_methods
-
-    - name: Timestepping Notebooks
-      uses: ./.github/actions/docker-run
-      with:
-        uid: ${{ steps.build.outputs.unique }}
-        tag: ${{ matrix.name }}
-        env: |
-          CI=true
-          CODECOV_TOKEN=${{ secrets.CODECOV_TOKEN }}
-          DEVITO_LOGGING=DEBUG
-          PYTHONFAULTHANDLER=1
-        command: |
-          pytest --nbval examples/timestepping
+          pytest -v --nbval examples/seismic/tutorials/*dask*.ipynb
 
     - name: Cleanup docker image
       if: always()

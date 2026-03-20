@@ -115,8 +115,10 @@ jobs:
         uid: ${{ steps.build.outputs.unique }}
         tag: ${{ matrix.name }}
         args: ${{ matrix.dockerflags }}
-        env: |
-        command: pytest ${{ matrix.test_examples }}
+        command: |
+          pytest \
+            -v \
+            ${{ matrix.test_examples }}
 
     - name: Test examples with MPI
       uses: ./.github/actions/docker-run
@@ -125,9 +127,14 @@ jobs:
         tag: ${{ matrix.name }}
         args: ${{ matrix.dockerflags }}
         env: |
+          CI=true
           DEVITO_LOGGING=DEBUG
           DEVITO_MPI=1
-        command: mpiexec -n 2 pytest ${{ matrix.test_examples }}
+        command: |
+          mpiexec -n 2 \
+            pytest \
+              -v \
+              ${{ matrix.test_examples }}
 
     - name: Cleanup docker image
       if: always()
