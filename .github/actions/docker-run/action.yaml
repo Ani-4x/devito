@@ -49,7 +49,7 @@ runs:
       name: "Run command ${{ inputs.command }} in ${{ inputs.tag }} docker container"
       shell: bash
       env:
-        NAME: ${{ input.name }}
+        NAME: ${{ inputs.name }}
       run: |
         docker run \
           --init -t --rm \
